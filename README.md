@@ -230,6 +230,7 @@ The extension is **nearly complete**! The remaining work is primarily:
 7. **CI/CD** - add steps in `.github` to perform tests on push
 8. **Registration server** - add registration server with database to manage users
 9. **Deployment** - Add `.github` deployment step for registration server
+10. **Cosmetic** - Reduce the size of compiled code
 
 ## License
 
