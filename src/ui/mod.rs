@@ -1,25 +1,5 @@
-/// UI module exports
-use yew::prelude::*;
+/// UI module - Yew components for Tab Hoarder
 
-// Placeholder modules for now
-pub mod popup {
-    use yew::prelude::*;
-
-    #[function_component(App)]
-    pub fn app() -> Html {
-        html! {
-            <div>{"Tab Hoarder Popup - Coming Soon"}</div>
-        }
-    }
-}
-
-pub mod collapsed {
-    use yew::prelude::*;
-
-    #[function_component(CollapsedViewer)]
-    pub fn collapsed_viewer() -> Html {
-        html! {
-            <div>{"Collapsed Tabs Viewer - Coming Soon"}</div>
-        }
-    }
-}
+pub mod popup;
+pub mod collapsed;
+pub mod components;

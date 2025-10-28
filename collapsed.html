@@ -23,15 +23,6 @@
 </head>
 <body>
     <div id="app"></div>
-    <script type="module">
-        import init, { start_collapsed_viewer } from './pkg/tab_hoarder.js';
-
-        async function run() {
-            await init();
-            start_collapsed_viewer();
-        }
-
-        run();
-    </script>
+    <script type="module" src="collapsed-init.js"></script>
 </body>
 </html>

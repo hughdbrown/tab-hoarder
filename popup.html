@@ -20,15 +20,6 @@
 </head>
 <body>
     <div id="app"></div>
-    <script type="module">
-        import init, { start_popup } from './pkg/tab_hoarder.js';
-
-        async function run() {
-            await init();
-            start_popup();
-        }
-
-        run();
-    </script>
+    <script type="module" src="popup-init.js"></script>
 </body>
 </html>

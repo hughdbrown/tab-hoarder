@@ -225,10 +225,6 @@ The extension is **nearly complete**! The remaining work is primarily:
 2. **Wiring everything together** - Connect the layers
 3. **Testing and polish** - Manual testing with real tab loads
 
-## Documentation
-
-See `ai/CLAUDE.md` for detailed architecture documentation and implementation guidelines.
-
 ## License
 
 MIT

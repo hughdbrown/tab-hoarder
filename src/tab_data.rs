@@ -31,7 +31,7 @@ pub struct DomainCount {
 }
 
 /// A collapsed tab session
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CollapsedSession {
     pub id: String,
     pub name: String,
@@ -40,7 +40,7 @@ pub struct CollapsedSession {
 }
 
 /// A saved tab within a collapsed session
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct SavedTab {
     pub url: String,
     pub title: String,
