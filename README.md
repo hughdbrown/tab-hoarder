@@ -227,10 +227,14 @@ The extension is **nearly complete**! The remaining work is primarily:
 4. **User registration** - Add user profile editing / registration that is linked to an external server
 5. **Payment feature** - Add Rust code to integrate with payment (polar.sh or Stripe)
 6. **Tab management features** - Expand the tab management features
-7. **CI/CD** - add steps in `.github` to perform tests on push
+7. **CI/CD**
+- add steps in `.github` to perform tests on push
+- add green light / red light to README to show successful builds
 8. **Registration server** - add registration server with database to manage users
 9. **Deployment** - Add `.github` deployment step for registration server
-10. **Cosmetic** - Reduce the size of compiled code
+10. **Cosmetic**
+- Reduce the size of compiled code
+- Add screenshot of app for github
 11. **Publish extension** - Create user docs for publication, push extension to Chrome extension store
 
 ## License
