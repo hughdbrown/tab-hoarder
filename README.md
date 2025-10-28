@@ -224,6 +224,9 @@ The extension is **nearly complete**! The remaining work is primarily:
 1. **Building Yew UI components** - The Rust logic and JS bridge are done
 2. **Wiring everything together** - Connect the layers
 3. **Testing and polish** - Manual testing with real tab loads
+4. **User registration** - Add user profile editing / registration that is linked to an external server
+5. **Payment feature** - Add Rust code to integrate with payment (polar.sh or Stripe)
+6. **Tab management features** - Expand the tab management features
 
 ## License
 
