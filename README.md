@@ -231,6 +231,7 @@ The extension is **nearly complete**! The remaining work is primarily:
 8. **Registration server** - add registration server with database to manage users
 9. **Deployment** - Add `.github` deployment step for registration server
 10. **Cosmetic** - Reduce the size of compiled code
+11. **Publish extension** - Create user docs for publication, push extension to Chrome extension store
 
 ## License
 
