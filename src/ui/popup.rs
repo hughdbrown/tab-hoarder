@@ -59,6 +59,7 @@ pub fn app() -> Html {
     let state = use_state(|| AppState::Idle);
     let domain_stats = use_state(|| Vec::<DomainStat>::new());
     let storage_warning = use_state(|| None::<String>);
+    let is_domains_expanded = use_state(|| false);
 
     // Check storage quota on mount
     {
@@ -83,10 +84,19 @@ pub fn app() -> Html {
     let on_analyze = {
         let state = state.clone();
         let domain_stats = domain_stats.clone();
+        let is_domains_expanded = is_domains_expanded.clone();
 
         Callback::from(move |_| {
+            // If already expanded with data, just collapse
+            if *is_domains_expanded && !domain_stats.is_empty() {
+                is_domains_expanded.set(false);
+                return;
+            }
+
+            // Otherwise, analyze and expand
             let state = state.clone();
             let domain_stats = domain_stats.clone();
+            let is_domains_expanded = is_domains_expanded.clone();
 
             state.set(AppState::Loading("Analyzing domains...".to_string()));
 
@@ -103,6 +113,7 @@ pub fn app() -> Html {
                             .collect();
 
                         domain_stats.set(stats);
+                        is_domains_expanded.set(true);
                         state.set(AppState::Idle);
                     }
                     Err(e) => {
@@ -266,8 +277,8 @@ pub fn app() -> Html {
                 <Alert message={warning} alert_type={AlertType::Warning} />
             }
 
-            // Domain stats
-            if !domain_stats.is_empty() {
+            // Domain stats (only show when expanded)
+            if *is_domains_expanded && !domain_stats.is_empty() {
                 <div style="margin-bottom: 20px;">
                     <h2 style="font-size: 16px; color: #666; margin-bottom: 10px;">{"Top 10 Domains"}</h2>
                     <div style="background-color: #f5f5f5; border-radius: 4px; padding: 10px;">
@@ -301,7 +312,11 @@ pub fn app() -> Html {
             // Action buttons
             <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
                 <Button onclick={on_analyze} disabled={is_busy}>
-                    {"📊 Analyze Domains"}
+                    {if *is_domains_expanded && !domain_stats.is_empty() {
+                        "📊 Analyze Domains ▼"
+                    } else {
+                        "📊 Analyze Domains ▶"
+                    }}
                 </Button>
 
                 <Button onclick={on_sort} disabled={is_busy}>
