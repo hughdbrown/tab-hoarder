@@ -214,12 +214,17 @@ pub fn app() -> Html {
                         let date = js_sys::Date::new(&JsValue::from_f64(now));
                         let name = format!("Session {}", format_date(&date));
 
-                        let saved_tabs: Vec<SavedTab> = unique_tabs.iter().map(|tab| {
-                            SavedTab {
-                                url: tab.url.clone(),
-                                title: tab.title.clone(),
-                                domain: crate::domain::extract_domain(&tab.url),
-                                pinned: tab.pinned,
+                        let saved_tabs: Vec<SavedTab> = unique_tabs.iter().filter_map(|tab| {
+                            match crate::domain::extract_domain(&tab.url) {
+                                Some(domain) => {
+                                    Some(SavedTab {
+                                        url: tab.url.clone(),
+                                        title: tab.title.clone(),
+                                        domain,
+                                        pinned: tab.pinned,
+                                    })
+                                },
+                                None => None,
                             }
                         }).collect();
 

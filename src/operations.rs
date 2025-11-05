@@ -7,9 +7,11 @@ use crate::tab_data::TabInfo;
 pub fn sort_tabs_by_domain(tabs: &[TabInfo]) -> Vec<TabInfo> {
     let mut tabs_with_domain: Vec<(TabInfo, String)> = tabs
         .iter()
-        .map(|tab| {
-            let domain = extract_domain(&tab.url);
-            (tab.clone(), domain)
+        .filter_map(|tab: &TabInfo| {
+            match extract_domain(&tab.url) {
+                Some(domain) => Some((tab.clone(), domain)),
+                None => None,
+            }
         })
         .collect();
 
@@ -63,10 +65,10 @@ mod tests {
         let sorted = sort_tabs_by_domain(&tabs);
 
         // Should be sorted: github, google, google, microsoft
-        assert_eq!(extract_domain(&sorted[0].url), "github.com");
-        assert_eq!(extract_domain(&sorted[1].url), "google.com");
-        assert_eq!(extract_domain(&sorted[2].url), "google.com");
-        assert_eq!(extract_domain(&sorted[3].url), "microsoft.com");
+        assert_eq!(extract_domain(&sorted[0].url), Some("github.com".to_string()));
+        assert_eq!(extract_domain(&sorted[1].url), Some("google.com".to_string()));
+        assert_eq!(extract_domain(&sorted[2].url), Some("google.com".to_string()));
+        assert_eq!(extract_domain(&sorted[3].url), Some("microsoft.com".to_string()));
     }
 
     #[test]

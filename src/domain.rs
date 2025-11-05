@@ -18,45 +18,40 @@ use std::collections::HashMap;
 /// - https://ai.microsoft.com → microsoft.com
 /// - https://news.bbc.co.uk/article → bbc.co.uk
 /// - https://shop.example.com.au/products → example.com.au
-pub fn extract_domain(url: &str) -> String {
-    // Handle empty or invalid URLs
-    if url.is_empty() {
-        return String::from("invalid");
-    }
-
+pub fn extract_domain(url: &str) -> Option<String> {
     // Extract hostname from URL
-    let hostname = match extract_hostname(url) {
-        Some(h) => h,
-        None => return String::from("invalid"),
-    };
+    if !url.is_empty() {
+        if let Some(hostname) = extract_hostname(url) {
+            // Handle localhost and IP addresses
+            if hostname == "localhost" || is_ip_address(&hostname) {
+                return Some(hostname);
+            }
 
-    // Handle localhost and IP addresses
-    if hostname == "localhost" || is_ip_address(&hostname) {
-        return hostname;
-    }
+            // Split hostname into parts
+            let parts: Vec<&str> = hostname.split('.').collect();
 
-    // Split hostname into parts
-    let parts: Vec<&str> = hostname.split('.').collect();
+            // Need at least 2 parts for a valid domain
+            if parts.len() < 2 {
+                return Some(hostname);
+            }
 
-    // Need at least 2 parts for a valid domain
-    if parts.len() < 2 {
-        return hostname;
-    }
+            // Get the TLD (last part)
+            let tld = parts[parts.len() - 1];
 
-    // Get the TLD (last part)
-    let tld = parts[parts.len() - 1];
+            // Check if we need 3 parts (for .co.uk, .com.au style TLDs)
+            if parts.len() >= 3 && tld.len() == 2 {
+                let second_level = parts[parts.len() - 2];
+                if second_level == "co" || second_level == "com" {
+                    // Return last 3 parts (e.g., "bbc.co.uk" or "example.com.au")
+                    return Some(parts[parts.len() - 3..].join("."));
+                }
+            }
 
-    // Check if we need 3 parts (for .co.uk, .com.au style TLDs)
-    if parts.len() >= 3 && tld.len() == 2 {
-        let second_level = parts[parts.len() - 2];
-        if second_level == "co" || second_level == "com" {
-            // Return last 3 parts (e.g., "bbc.co.uk" or "example.com.au")
-            return parts[parts.len() - 3..].join(".");
+            // Default: return last 2 parts (e.g., "google.com")
+            return Some(parts[parts.len() - 2..].join("."));
         }
     }
-
-    // Default: return last 2 parts (e.g., "google.com")
-    parts[parts.len() - 2..].join(".")
+    None
 }
 
 /// Extract hostname from a URL string
@@ -96,8 +91,9 @@ pub fn count_domains(urls: &[String]) -> HashMap<String, usize> {
     let mut counts: HashMap<String, usize> = HashMap::new();
 
     for url in urls {
-        let domain = extract_domain(url);
-        *counts.entry(domain).or_insert(0) += 1;
+        if let Some(domain) = extract_domain(url) {
+            *counts.entry(domain).or_insert(0) += 1;
+        }
     }
 
     counts
@@ -125,51 +121,51 @@ mod tests {
 
     #[test]
     fn test_extract_domain_basic() {
-        assert_eq!(extract_domain("https://www.google.com"), "google.com");
-        assert_eq!(extract_domain("https://google.com"), "google.com");
-        assert_eq!(extract_domain("http://google.com"), "google.com");
+        assert_eq!(extract_domain("https://www.google.com"), Some("google.com".to_string()));
+        assert_eq!(extract_domain("https://google.com"), Some("google.com".to_string()));
+        assert_eq!(extract_domain("http://google.com"), Some("google.com".to_string()));
     }
 
     #[test]
     fn test_extract_domain_subdomains() {
-        assert_eq!(extract_domain("https://ai.microsoft.com"), "microsoft.com");
-        assert_eq!(extract_domain("https://app.microsoft.com"), "microsoft.com");
-        assert_eq!(extract_domain("https://docs.microsoft.com"), "microsoft.com");
-        assert_eq!(extract_domain("https://www.microsoft.com"), "microsoft.com");
+        assert_eq!(extract_domain("https://ai.microsoft.com"), Some("microsoft.com".to_string()));
+        assert_eq!(extract_domain("https://app.microsoft.com"), Some("microsoft.com".to_string()));
+        assert_eq!(extract_domain("https://docs.microsoft.com"), Some("microsoft.com".to_string()));
+        assert_eq!(extract_domain("https://www.microsoft.com"), Some("microsoft.com".to_string()));
     }
 
     #[test]
     fn test_extract_domain_with_path() {
-        assert_eq!(extract_domain("https://www.google.com/search?q=rust"), "google.com");
-        assert_eq!(extract_domain("https://github.com/rust-lang/rust"), "github.com");
+        assert_eq!(extract_domain("https://www.google.com/search?q=rust"), Some("google.com".to_string()));
+        assert_eq!(extract_domain("https://github.com/rust-lang/rust"), Some("github.com".to_string()));
     }
 
     #[test]
     fn test_extract_domain_country_tlds() {
-        assert_eq!(extract_domain("https://news.bbc.co.uk"), "bbc.co.uk");
-        assert_eq!(extract_domain("https://www.bbc.co.uk/news"), "bbc.co.uk");
-        assert_eq!(extract_domain("https://shop.example.com.au"), "example.com.au");
-        assert_eq!(extract_domain("https://store.amazon.com.au"), "amazon.com.au");
+        assert_eq!(extract_domain("https://news.bbc.co.uk"), Some("bbc.co.uk".to_string()));
+        assert_eq!(extract_domain("https://www.bbc.co.uk/news"), Some("bbc.co.uk".to_string()));
+        assert_eq!(extract_domain("https://shop.example.com.au"), Some("example.com.au".to_string()));
+        assert_eq!(extract_domain("https://store.amazon.com.au"), Some("amazon.com.au".to_string()));
     }
 
     #[test]
     fn test_extract_domain_special_cases() {
-        assert_eq!(extract_domain("https://localhost:3000"), "localhost");
-        assert_eq!(extract_domain("http://127.0.0.1:8080"), "127.0.0.1");
-        assert_eq!(extract_domain("https://192.168.1.1"), "192.168.1.1");
+        assert_eq!(extract_domain("https://localhost:3000"), Some("localhost".to_string()));
+        assert_eq!(extract_domain("http://127.0.0.1:8080"), Some("127.0.0.1".to_string()));
+        assert_eq!(extract_domain("https://192.168.1.1"), Some("192.168.1.1".to_string()));
     }
 
     #[test]
     fn test_extract_domain_edge_cases() {
-        assert_eq!(extract_domain(""), "invalid");
-        assert_eq!(extract_domain("not-a-url"), "not-a-url");
-        assert_eq!(extract_domain("https://"), "invalid");
+        assert_eq!(extract_domain(""), None);
+        assert_eq!(extract_domain("not-a-url"), Some("not-a-url".to_string()));
+        assert_eq!(extract_domain("https://"), None);
     }
 
     #[test]
     fn test_extract_domain_io_domains() {
-        assert_eq!(extract_domain("https://zinfandel.io"), "zinfandel.io");
-        assert_eq!(extract_domain("https://api.zinfandel.io"), "zinfandel.io");
+        assert_eq!(extract_domain("https://zinfandel.io"), Some("zinfandel.io".to_string()));
+        assert_eq!(extract_domain("https://api.zinfandel.io"), Some("zinfandel.io".to_string()));
     }
 
     #[test]
