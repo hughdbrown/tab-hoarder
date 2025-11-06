@@ -4,7 +4,7 @@ use yew::prelude::*;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::spawn_local;
 use web_sys::{HtmlInputElement, console};
-use crate::ui::components::*;
+use patternfly_yew::prelude::*;
 use crate::storage::StorageData;
 use crate::tab_data::{CollapsedSession, SavedTab};
 use std::collections::HashMap;
@@ -279,16 +279,21 @@ pub fn collapsed_viewer() -> Html {
             // Status display
             {match &*state {
                 ViewState::Loading => html! {
-                    <Spinner message={"Loading sessions...".to_string()} />
+                    <div style="margin-bottom: 20px; text-align: center;">
+                        <Spinner />
+                        <p style="margin-top: 10px;">{"Loading sessions..."}</p>
+                    </div>
                 },
                 ViewState::Restoring(progress, msg) => html! {
                     <div style="margin-bottom: 20px;">
-                        <p style="color: #666; margin-bottom: 5px;">{msg}</p>
-                        <ProgressBar progress={*progress} />
+                        <p style="margin-bottom: 10px;">{msg}</p>
+                        <Progress value={*progress as f64} />
                     </div>
                 },
                 ViewState::Error(err) => html! {
-                    <Alert message={err.clone()} alert_type={AlertType::Error} />
+                    <Alert r#type={AlertType::Danger} title={"Error"} inline={true}>
+                        {err.clone()}
+                    </Alert>
                 },
                 ViewState::Idle => html! {}
             }}
@@ -414,18 +419,17 @@ fn session_card(props: &SessionCardProps) -> Html {
                                 oninput={props.on_edit_input.clone()}
                                 style="flex: 1; padding: 8px; border: 1px solid #5B4FE8; border-radius: 4px; font-size: 16px; font-weight: 600;"
                             />
-                            <button
+                            <Button
                                 onclick={props.on_save_edit.reform(|_| ())}
-                                style="padding: 8px 16px; background-color: #5B4FE8; color: white; border: none; border-radius: 4px; cursor: pointer;"
                             >
                                 {"✓"}
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                                 onclick={props.on_cancel_edit.reform(|_| ())}
-                                style="padding: 8px 16px; background-color: #ddd; color: #333; border: none; border-radius: 4px; cursor: pointer;"
+                                variant={ButtonVariant::Secondary}
                             >
                                 {"✗"}
-                            </button>
+                            </Button>
                         </div>
                     } else {
                         <div style="display: flex; gap: 10px; align-items: center;">
@@ -448,39 +452,38 @@ fn session_card(props: &SessionCardProps) -> Html {
                 </div>
 
                 <div style="display: flex; gap: 10px;">
-                    <button
+                    <Button
                         onclick={toggle_expanded.reform(|_| ())}
-                        style="padding: 8px 16px; background-color: #e0e0e0; color: #333; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;"
+                        variant={ButtonVariant::Secondary}
                     >
                         {if *expanded { "▲ Collapse" } else { "▼ Expand" }}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                         onclick={props.on_restore.reform({
                             let session = session.clone();
                             move |_| session.clone()
                         })}
-                        style="padding: 8px 16px; background-color: #5B4FE8; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;"
                     >
                         {"🔄 Restore All"}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                         onclick={props.on_export.reform({
                             let session = session.clone();
                             move |_| session.clone()
                         })}
-                        style="padding: 8px 16px; background-color: #e0e0e0; color: #333; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;"
+                        variant={ButtonVariant::Secondary}
                     >
                         {"📥"}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                         onclick={props.on_delete.reform({
                             let session_id = session.id.clone();
                             move |_| session_id.clone()
                         })}
-                        style="padding: 8px 16px; background-color: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;"
+                        variant={ButtonVariant::Danger}
                     >
                         {"🗑️"}
-                    </button>
+                    </Button>
                 </div>
             </div>
 
@@ -512,18 +515,19 @@ fn session_card(props: &SessionCardProps) -> Html {
                                                     </div>
                                                 </div>
                                                 <div style="display: flex; gap: 5px; margin-left: 10px;">
-                                                    <button
+                                                    <Button
                                                         onclick={props.on_restore_tab.reform(move |_| tab_clone.clone())}
-                                                        style="padding: 4px 8px; background-color: #5B4FE8; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 11px;"
+                                                        size={ButtonSize::Small}
                                                     >
                                                         {"🔄"}
-                                                    </button>
-                                                    <button
+                                                    </Button>
+                                                    <Button
                                                         onclick={props.on_delete_tab.reform(move |_| (session_id.clone(), tab_url.clone()))}
-                                                        style="padding: 4px 8px; background-color: #f44336; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 11px;"
+                                                        variant={ButtonVariant::Danger}
+                                                        size={ButtonSize::Small}
                                                     >
                                                         {"✗"}
-                                                    </button>
+                                                    </Button>
                                                 </div>
                                             </div>
                                         }
