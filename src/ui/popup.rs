@@ -54,12 +54,21 @@ enum AppState {
     Error(String),
 }
 
+#[derive(Clone, PartialEq)]
+enum Tab {
+    Search,
+    SortUnique,
+    Archive,
+    Analyze,
+}
+
 #[function_component(App)]
 pub fn app() -> Html {
     let state = use_state(|| AppState::Idle);
     let domain_stats = use_state(|| Vec::<DomainStat>::new());
     let storage_warning = use_state(|| None::<String>);
     let is_domains_expanded = use_state(|| false);
+    let active_tab = use_state(|| Tab::Search);
 
     // Check storage quota on mount
     {
@@ -273,6 +282,17 @@ pub fn app() -> Html {
 
     let is_busy = !matches!(*state, AppState::Idle);
 
+    // Tab click handlers
+    let on_tab_click = {
+        let active_tab = active_tab.clone();
+        move |tab: Tab| {
+            let active_tab = active_tab.clone();
+            Callback::from(move |_| {
+                active_tab.set(tab.clone());
+            })
+        }
+    };
+
     html! {
         <div style="padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
             <h1 style="margin: 0 0 20px 0; font-size: 24px; color: #333;">{"Tab Hoarder"}</h1>
@@ -282,20 +302,57 @@ pub fn app() -> Html {
                 <Alert message={warning} alert_type={AlertType::Warning} />
             }
 
-            // Domain stats (only show when expanded)
-            if *is_domains_expanded && !domain_stats.is_empty() {
-                <div style="margin-bottom: 20px;">
-                    <h2 style="font-size: 16px; color: #666; margin-bottom: 10px;">{"Top 10 Domains"}</h2>
-                    <div style="background-color: #f5f5f5; border-radius: 4px; padding: 10px;">
-                        {for domain_stats.iter().map(|stat| html! {
-                            <div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #ddd;">
-                                <span style="color: #333;">{&stat.domain}</span>
-                                <span style="color: #5B4FE8; font-weight: bold;">{stat.count}</span>
-                            </div>
-                        })}
-                    </div>
-                </div>
-            }
+            // Tab navigation
+            <div style="display: flex; border-bottom: 2px solid #e0e0e0; margin-bottom: 20px;">
+                <button
+                    onclick={on_tab_click(Tab::Search)}
+                    style={format!(
+                        "flex: 1; padding: 12px 16px; background: none; border: none; cursor: pointer; \
+                        font-size: 14px; font-weight: 500; transition: all 0.2s; \
+                        border-bottom: 3px solid {}; color: {};",
+                        if *active_tab == Tab::Search { "#5B4FE8" } else { "transparent" },
+                        if *active_tab == Tab::Search { "#5B4FE8" } else { "#666" }
+                    )}
+                >
+                    {"Search"}
+                </button>
+                <button
+                    onclick={on_tab_click(Tab::SortUnique)}
+                    style={format!(
+                        "flex: 1; padding: 12px 16px; background: none; border: none; cursor: pointer; \
+                        font-size: 14px; font-weight: 500; transition: all 0.2s; \
+                        border-bottom: 3px solid {}; color: {};",
+                        if *active_tab == Tab::SortUnique { "#5B4FE8" } else { "transparent" },
+                        if *active_tab == Tab::SortUnique { "#5B4FE8" } else { "#666" }
+                    )}
+                >
+                    {"Sort/unique"}
+                </button>
+                <button
+                    onclick={on_tab_click(Tab::Archive)}
+                    style={format!(
+                        "flex: 1; padding: 12px 16px; background: none; border: none; cursor: pointer; \
+                        font-size: 14px; font-weight: 500; transition: all 0.2s; \
+                        border-bottom: 3px solid {}; color: {};",
+                        if *active_tab == Tab::Archive { "#5B4FE8" } else { "transparent" },
+                        if *active_tab == Tab::Archive { "#5B4FE8" } else { "#666" }
+                    )}
+                >
+                    {"Archive"}
+                </button>
+                <button
+                    onclick={on_tab_click(Tab::Analyze)}
+                    style={format!(
+                        "flex: 1; padding: 12px 16px; background: none; border: none; cursor: pointer; \
+                        font-size: 14px; font-weight: 500; transition: all 0.2s; \
+                        border-bottom: 3px solid {}; color: {};",
+                        if *active_tab == Tab::Analyze { "#5B4FE8" } else { "transparent" },
+                        if *active_tab == Tab::Analyze { "#5B4FE8" } else { "#666" }
+                    )}
+                >
+                    {"Analyze"}
+                </button>
+            </div>
 
             // Status display
             {match &*state {
@@ -314,31 +371,61 @@ pub fn app() -> Html {
                 AppState::Idle => html! {}
             }}
 
-            // Action buttons
-            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
-                <Button onclick={on_analyze} disabled={is_busy}>
-                    {if *is_domains_expanded && !domain_stats.is_empty() {
-                        "📊 Analyze Domains ▼"
-                    } else {
-                        "📊 Analyze Domains ▶"
-                    }}
-                </Button>
+            // Tab content
+            <div style="margin-top: 20px;">
+                {match &*active_tab {
+                    Tab::Search => html! {
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            // Empty for now
+                        </div>
+                    },
+                    Tab::SortUnique => html! {
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <Button onclick={on_sort} disabled={is_busy}>
+                                {"🔤 Sort Tabs by Domain"}
+                            </Button>
+                            <Button onclick={on_unique} disabled={is_busy}>
+                                {"🗑️ Make Tabs Unique"}
+                            </Button>
+                        </div>
+                    },
+                    Tab::Archive => html! {
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <Button onclick={on_collapse} disabled={is_busy} variant={ButtonVariant::Secondary}>
+                                {"💾 Collapse Tabs"}
+                            </Button>
+                            <Button onclick={on_view_collapsed} disabled={is_busy} variant={ButtonVariant::Secondary}>
+                                {"📂 View Collapsed Tabs"}
+                            </Button>
+                        </div>
+                    },
+                    Tab::Analyze => html! {
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <Button onclick={on_analyze} disabled={is_busy}>
+                                {if *is_domains_expanded && !domain_stats.is_empty() {
+                                    "📊 Analyze Domains ▼"
+                                } else {
+                                    "📊 Analyze Domains ▶"
+                                }}
+                            </Button>
 
-                <Button onclick={on_sort} disabled={is_busy}>
-                    {"🔤 Sort Tabs by Domain"}
-                </Button>
-
-                <Button onclick={on_unique} disabled={is_busy}>
-                    {"🗑️ Make Tabs Unique"}
-                </Button>
-
-                <Button onclick={on_collapse} disabled={is_busy} variant={ButtonVariant::Secondary}>
-                    {"💾 Collapse Tabs"}
-                </Button>
-
-                <Button onclick={on_view_collapsed} disabled={is_busy} variant={ButtonVariant::Secondary}>
-                    {"📂 View Collapsed Tabs"}
-                </Button>
+                            // Domain stats (only show when expanded)
+                            if *is_domains_expanded && !domain_stats.is_empty() {
+                                <div style="margin-top: 10px;">
+                                    <h2 style="font-size: 16px; color: #666; margin-bottom: 10px;">{"Top 10 Domains"}</h2>
+                                    <div style="background-color: #f5f5f5; border-radius: 4px; padding: 10px;">
+                                        {for domain_stats.iter().map(|stat| html! {
+                                            <div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #ddd;">
+                                                <span style="color: #333;">{&stat.domain}</span>
+                                                <span style="color: #5B4FE8; font-weight: bold;">{stat.count}</span>
+                                            </div>
+                                        })}
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    },
+                }}
             </div>
 
             <p style="margin-top: 20px; font-size: 12px; color: #999; text-align: center;">
