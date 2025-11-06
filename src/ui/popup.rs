@@ -4,7 +4,7 @@ use yew::prelude::*;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::spawn_local;
 use web_sys::console;
-use crate::ui::components::*;
+use patternfly_yew::prelude::*;
 use crate::domain::{count_domains, get_top_domains};
 use crate::operations::{sort_tabs_by_domain, make_tabs_unique};
 use crate::tab_data::TabInfo;
@@ -55,7 +55,7 @@ enum AppState {
 }
 
 #[derive(Clone, PartialEq)]
-enum Tab {
+enum ActiveTab {
     Search,
     SortUnique,
     Archive,
@@ -68,7 +68,7 @@ pub fn app() -> Html {
     let domain_stats = use_state(|| Vec::<DomainStat>::new());
     let storage_warning = use_state(|| None::<String>);
     let is_domains_expanded = use_state(|| false);
-    let active_tab = use_state(|| Tab::Search);
+    let active_tab = use_state(|| ActiveTab::Search);
 
     // Check storage quota on mount
     {
@@ -285,7 +285,7 @@ pub fn app() -> Html {
     // Tab click handlers
     let on_tab_click = {
         let active_tab = active_tab.clone();
-        move |tab: Tab| {
+        move |tab: ActiveTab| {
             let active_tab = active_tab.clone();
             Callback::from(move |_| {
                 active_tab.set(tab.clone());
@@ -294,79 +294,73 @@ pub fn app() -> Html {
     };
 
     html! {
-        <div style="padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+        <div style="padding: 20px;">
             <h1 style="margin: 0 0 20px 0; font-size: 24px; color: #333;">{"Tab Hoarder"}</h1>
 
             // Storage warning
             if let Some(warning) = (*storage_warning).clone() {
-                <Alert message={warning} alert_type={AlertType::Warning} />
+                <Alert r#type={AlertType::Warning} title={warning} inline={true}>
+                </Alert>
             }
 
             // Tab navigation
-            <div style="display: flex; border-bottom: 2px solid #e0e0e0; margin-bottom: 20px;">
-                <button
-                    onclick={on_tab_click(Tab::Search)}
-                    style={format!(
-                        "flex: 1; padding: 12px 16px; background: none; border: none; cursor: pointer; \
-                        font-size: 14px; font-weight: 500; transition: all 0.2s; \
-                        border-bottom: 3px solid {}; color: {};",
-                        if *active_tab == Tab::Search { "#5B4FE8" } else { "transparent" },
-                        if *active_tab == Tab::Search { "#5B4FE8" } else { "#666" }
-                    )}
-                >
-                    {"Search"}
-                </button>
-                <button
-                    onclick={on_tab_click(Tab::SortUnique)}
-                    style={format!(
-                        "flex: 1; padding: 12px 16px; background: none; border: none; cursor: pointer; \
-                        font-size: 14px; font-weight: 500; transition: all 0.2s; \
-                        border-bottom: 3px solid {}; color: {};",
-                        if *active_tab == Tab::SortUnique { "#5B4FE8" } else { "transparent" },
-                        if *active_tab == Tab::SortUnique { "#5B4FE8" } else { "#666" }
-                    )}
-                >
-                    {"Sort/unique"}
-                </button>
-                <button
-                    onclick={on_tab_click(Tab::Archive)}
-                    style={format!(
-                        "flex: 1; padding: 12px 16px; background: none; border: none; cursor: pointer; \
-                        font-size: 14px; font-weight: 500; transition: all 0.2s; \
-                        border-bottom: 3px solid {}; color: {};",
-                        if *active_tab == Tab::Archive { "#5B4FE8" } else { "transparent" },
-                        if *active_tab == Tab::Archive { "#5B4FE8" } else { "#666" }
-                    )}
-                >
-                    {"Archive"}
-                </button>
-                <button
-                    onclick={on_tab_click(Tab::Analyze)}
-                    style={format!(
-                        "flex: 1; padding: 12px 16px; background: none; border: none; cursor: pointer; \
-                        font-size: 14px; font-weight: 500; transition: all 0.2s; \
-                        border-bottom: 3px solid {}; color: {};",
-                        if *active_tab == Tab::Analyze { "#5B4FE8" } else { "transparent" },
-                        if *active_tab == Tab::Analyze { "#5B4FE8" } else { "#666" }
-                    )}
-                >
-                    {"Analyze"}
-                </button>
+            <div class="pf-v5-c-tabs" style="margin-bottom: 20px;">
+                <ul class="pf-v5-c-tabs__list">
+                    <li class={if *active_tab == ActiveTab::Search { "pf-v5-c-tabs__item pf-m-current" } else { "pf-v5-c-tabs__item" }}>
+                        <button
+                            class="pf-v5-c-tabs__link"
+                            onclick={on_tab_click(ActiveTab::Search)}
+                        >
+                            <span class="pf-v5-c-tabs__item-text">{"Search"}</span>
+                        </button>
+                    </li>
+                    <li class={if *active_tab == ActiveTab::SortUnique { "pf-v5-c-tabs__item pf-m-current" } else { "pf-v5-c-tabs__item" }}>
+                        <button
+                            class="pf-v5-c-tabs__link"
+                            onclick={on_tab_click(ActiveTab::SortUnique)}
+                        >
+                            <span class="pf-v5-c-tabs__item-text">{"Sort/unique"}</span>
+                        </button>
+                    </li>
+                    <li class={if *active_tab == ActiveTab::Archive { "pf-v5-c-tabs__item pf-m-current" } else { "pf-v5-c-tabs__item" }}>
+                        <button
+                            class="pf-v5-c-tabs__link"
+                            onclick={on_tab_click(ActiveTab::Archive)}
+                        >
+                            <span class="pf-v5-c-tabs__item-text">{"Archive"}</span>
+                        </button>
+                    </li>
+                    <li class={if *active_tab == ActiveTab::Analyze { "pf-v5-c-tabs__item pf-m-current" } else { "pf-v5-c-tabs__item" }}>
+                        <button
+                            class="pf-v5-c-tabs__link"
+                            onclick={on_tab_click(ActiveTab::Analyze)}
+                        >
+                            <span class="pf-v5-c-tabs__item-text">{"Analyze"}</span>
+                        </button>
+                    </li>
+                </ul>
             </div>
 
             // Status display
             {match &*state {
                 AppState::Loading(msg) => html! {
-                    <Spinner message={msg.clone()} />
+                    <div style="margin-top: 20px; text-align: center;">
+                        <Spinner />
+                        <p style="margin-top: 10px;">{msg}</p>
+                    </div>
                 },
                 AppState::Processing(progress, msg) => html! {
-                    <div>
-                        <p style="color: #666; margin-bottom: 5px;">{msg}</p>
-                        <ProgressBar progress={*progress} />
+                    <div style="margin-top: 20px;">
+                        <p style="margin-bottom: 10px;">{msg}</p>
+                        <Progress value={*progress as f64} />
                     </div>
                 },
                 AppState::Error(err) => html! {
-                    <Alert message={err.clone()} alert_type={AlertType::Error} />
+                    <div style="margin-top: 20px;">
+                        <Alert r#type={AlertType::Danger} title={"Error"} inline={true}>
+                            {err.clone()}
+                        </Alert>
+                    </div>
                 },
                 AppState::Idle => html! {}
             }}
@@ -374,39 +368,35 @@ pub fn app() -> Html {
             // Tab content
             <div style="margin-top: 20px;">
                 {match &*active_tab {
-                    Tab::Search => html! {
+                    ActiveTab::Search => html! {
                         <div style="display: flex; flex-direction: column; gap: 10px;">
                             // Empty for now
                         </div>
                     },
-                    Tab::SortUnique => html! {
+                    ActiveTab::SortUnique => html! {
                         <div style="display: flex; flex-direction: column; gap: 10px;">
-                            <Button onclick={on_sort} disabled={is_busy}>
+                            <Button onclick={on_sort} disabled={is_busy} variant={ButtonVariant::Secondary} block={true}>
                                 {"🔤 Sort Tabs by Domain"}
                             </Button>
-                            <Button onclick={on_unique} disabled={is_busy}>
+                            <Button onclick={on_unique} disabled={is_busy} variant={ButtonVariant::Secondary} block={true}>
                                 {"🗑️ Make Tabs Unique"}
                             </Button>
                         </div>
                     },
-                    Tab::Archive => html! {
+                    ActiveTab::Archive => html! {
                         <div style="display: flex; flex-direction: column; gap: 10px;">
-                            <Button onclick={on_collapse} disabled={is_busy} variant={ButtonVariant::Secondary}>
+                            <Button onclick={on_collapse} disabled={is_busy} variant={ButtonVariant::Secondary} block={true}>
                                 {"💾 Collapse Tabs"}
                             </Button>
-                            <Button onclick={on_view_collapsed} disabled={is_busy} variant={ButtonVariant::Secondary}>
+                            <Button onclick={on_view_collapsed} disabled={is_busy} variant={ButtonVariant::Secondary} block={true}>
                                 {"📂 View Collapsed Tabs"}
                             </Button>
                         </div>
                     },
-                    Tab::Analyze => html! {
+                    ActiveTab::Analyze => html! {
                         <div style="display: flex; flex-direction: column; gap: 10px;">
-                            <Button onclick={on_analyze} disabled={is_busy}>
-                                {if *is_domains_expanded && !domain_stats.is_empty() {
-                                    "📊 Analyze Domains ▼"
-                                } else {
-                                    "📊 Analyze Domains ▶"
-                                }}
+                            <Button onclick={on_analyze} disabled={is_busy} variant={ButtonVariant::Secondary} block={true}>
+                                {"📊 Analyze Domains"}
                             </Button>
 
                             // Domain stats (only show when expanded)

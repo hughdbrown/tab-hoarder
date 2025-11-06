@@ -10,6 +10,9 @@ crate-type = ["cdylib", "rlib"]
 # Yew framework for UI
 yew = { version = "0.21", features = ["csr"] }
 
+# PatternFly UI components
+patternfly-yew = "0.6.3"
+
 # WASM bindings
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
