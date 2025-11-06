@@ -12,7 +12,7 @@ pub fn progress_bar(props: &ProgressBarProps) -> Html {
     let progress = props.progress.min(100);
 
     html! {
-        <div style="width: 100%; background-color: #e0e0e0; border-radius: 4px; height: 20px; overflow: hidden; margin: 10px 0;">
+        <div class="progress-container">
             <div style={format!("width: {}%; background-color: #5B4FE8; height: 100%; transition: width 0.3s ease; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: bold;", progress)}>
                 {format!("{}%", progress)}
             </div>
@@ -29,21 +29,11 @@ pub struct SpinnerProps {
 #[function_component(Spinner)]
 pub fn spinner(props: &SpinnerProps) -> Html {
     html! {
-        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px;">
-            <div style="
-                border: 4px solid #f3f3f3;
-                border-top: 4px solid #5B4FE8;
-                border-radius: 50%;
-                width: 40px;
-                height: 40px;
-                animation: spin 1s linear infinite;
-            "></div>
+        <div class="loading-container">
+            <div class="loading-spinner"></div>
             if let Some(msg) = &props.message {
-                <p style="margin-top: 10px; color: #666;">{msg}</p>
+                <p class="loading-message">{msg}</p>
             }
-            <style>
-                {"@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }"}
-            </style>
         </div>
     }
 }
@@ -132,7 +122,7 @@ pub fn alert(props: &AlertProps) -> Html {
 
     html! {
         <div style={format!("padding: 12px; border-radius: 4px; background-color: {}; border-left: 4px solid {}; margin: 10px 0;", bg_color, border_color)}>
-            <p style="margin: 0; color: #333; font-size: 14px;">{&props.message}</p>
+            <p class="message-paragraph">{&props.message}</p>
         </div>
     }
 }

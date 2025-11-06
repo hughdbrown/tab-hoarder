@@ -294,8 +294,8 @@ pub fn app() -> Html {
     };
 
     html! {
-        <div style="padding: 20px;">
-            <h1 style="margin: 0 0 20px 0; font-size: 24px; color: #333;">{"Tab Hoarder"}</h1>
+        <div class="padding-20">
+            <h1 class="popup-title">{"Tab Hoarder"}</h1>
 
             // Storage warning
             if let Some(warning) = (*storage_warning).clone() {
@@ -304,7 +304,7 @@ pub fn app() -> Html {
             }
 
             // Tab navigation
-            <div class="pf-v5-c-tabs" style="margin-bottom: 20px;">
+            <div class="pf-v5-c-tabs tabs-nav">
                 <ul class="pf-v5-c-tabs__list">
                     <li class={if *active_tab == ActiveTab::Search { "pf-v5-c-tabs__item pf-m-current" } else { "pf-v5-c-tabs__item" }}>
                         <button
@@ -344,19 +344,19 @@ pub fn app() -> Html {
             // Status display
             {match &*state {
                 AppState::Loading(msg) => html! {
-                    <div style="margin-top: 20px; text-align: center;">
+                    <div class="loading-text-center">
                         <Spinner />
-                        <p style="margin-top: 10px;">{msg}</p>
+                        <p class="loading-text">{msg}</p>
                     </div>
                 },
                 AppState::Processing(progress, msg) => html! {
-                    <div style="margin-top: 20px;">
-                        <p style="margin-bottom: 10px;">{msg}</p>
+                    <div class="message-top-margin">
+                        <p class="message-text">{msg}</p>
                         <Progress value={*progress as f64} />
                     </div>
                 },
                 AppState::Error(err) => html! {
-                    <div style="margin-top: 20px;">
+                    <div class="message-top-margin">
                         <Alert r#type={AlertType::Danger} title={"Error"} inline={true}>
                             {err.clone()}
                         </Alert>
@@ -366,15 +366,15 @@ pub fn app() -> Html {
             }}
 
             // Tab content
-            <div style="margin-top: 20px;">
+            <div class="tab-pane-content">
                 {match &*active_tab {
                     ActiveTab::Search => html! {
-                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <div class="flex-column-gap">
                             // Empty for now
                         </div>
                     },
                     ActiveTab::SortUnique => html! {
-                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <div class="flex-column-gap">
                             <Button onclick={on_sort} disabled={is_busy} variant={ButtonVariant::Secondary} block={true}>
                                 {"🔤 Sort Tabs by Domain"}
                             </Button>
@@ -384,7 +384,7 @@ pub fn app() -> Html {
                         </div>
                     },
                     ActiveTab::Archive => html! {
-                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <div class="flex-column-gap">
                             <Button onclick={on_collapse} disabled={is_busy} variant={ButtonVariant::Secondary} block={true}>
                                 {"💾 Collapse Tabs"}
                             </Button>
@@ -394,20 +394,20 @@ pub fn app() -> Html {
                         </div>
                     },
                     ActiveTab::Analyze => html! {
-                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <div class="flex-column-gap">
                             <Button onclick={on_analyze} disabled={is_busy} variant={ButtonVariant::Secondary} block={true}>
                                 {"📊 Analyze Domains"}
                             </Button>
 
                             // Domain stats (only show when expanded)
                             if *is_domains_expanded && !domain_stats.is_empty() {
-                                <div style="margin-top: 10px;">
-                                    <h2 style="font-size: 16px; color: #666; margin-bottom: 10px;">{"Top 10 Domains"}</h2>
-                                    <div style="background-color: #f5f5f5; border-radius: 4px; padding: 10px;">
+                                <div class="stats-container">
+                                    <h2 class="stats-title">{"Top 10 Domains"}</h2>
+                                    <div class="stats-box">
                                         {for domain_stats.iter().map(|stat| html! {
-                                            <div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #ddd;">
-                                                <span style="color: #333;">{&stat.domain}</span>
-                                                <span style="color: #5B4FE8; font-weight: bold;">{stat.count}</span>
+                                            <div class="stat-item">
+                                                <span class="stat-domain">{&stat.domain}</span>
+                                                <span class="stat-count">{stat.count}</span>
                                             </div>
                                         })}
                                     </div>
@@ -418,7 +418,7 @@ pub fn app() -> Html {
                 }}
             </div>
 
-            <p style="margin-top: 20px; font-size: 12px; color: #999; text-align: center;">
+            <p class="footer-popup">
                 {"Tab Hoarder v0.1.0"}
             </p>
         </div>

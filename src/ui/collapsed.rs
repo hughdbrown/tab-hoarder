@@ -268,9 +268,9 @@ pub fn collapsed_viewer() -> Html {
     };
 
     html! {
-        <div style="max-width: 1200px; margin: 0 auto; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h1 style="margin: 0; font-size: 28px; color: #333;">{"Collapsed Tabs"}</h1>
+        <div class="container">
+            <div class="header">
+                <h1 class="main-title">{"Collapsed Tabs"}</h1>
                 <Button onclick={on_export} variant={ButtonVariant::Secondary}>
                     {"📥 Export All"}
                 </Button>
@@ -279,14 +279,14 @@ pub fn collapsed_viewer() -> Html {
             // Status display
             {match &*state {
                 ViewState::Loading => html! {
-                    <div style="margin-bottom: 20px; text-align: center;">
+                    <div class="loading-text-center">
                         <Spinner />
-                        <p style="margin-top: 10px;">{"Loading sessions..."}</p>
+                        <p class="loading-text">{"Loading sessions..."}</p>
                     </div>
                 },
                 ViewState::Restoring(progress, msg) => html! {
-                    <div style="margin-bottom: 20px;">
-                        <p style="margin-bottom: 10px;">{msg}</p>
+                    <div class="message-container">
+                        <p class="message-text">{msg}</p>
                         <Progress value={*progress as f64} />
                     </div>
                 },
@@ -299,28 +299,28 @@ pub fn collapsed_viewer() -> Html {
             }}
 
             // Search bar
-            <div style="margin-bottom: 20px;">
+            <div class="search-container">
                 <input
                     type="text"
                     placeholder="Search sessions, domains, or URLs..."
                     value={(*search_query).clone()}
                     oninput={on_search_input}
-                    style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;"
+                    class="search-input"
                 />
             </div>
 
             // Sessions list
             if filtered_sessions.is_empty() {
-                <div style="text-align: center; padding: 40px; color: #999;">
+                <div class="empty-state">
                     if search_query.is_empty() {
                         <p>{"No collapsed sessions yet."}</p>
-                        <p style="font-size: 12px;">{"Use the popup to collapse tabs."}</p>
+                        <p class="empty-state-hint">{"Use the popup to collapse tabs."}</p>
                     } else {
                         <p>{"No sessions match your search."}</p>
                     }
                 </div>
             } else {
-                <div style="display: flex; flex-direction: column; gap: 20px;">
+                <div class="sessions-list">
                     {for filtered_sessions.iter().map(|session| {
                         let is_editing = (*editing_session).as_ref() == Some(&session.id);
 
@@ -345,7 +345,7 @@ pub fn collapsed_viewer() -> Html {
             }
 
             // Footer stats
-            <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; color: #999; font-size: 12px; text-align: center;">
+            <div class="footer">
                 {format!("{} sessions • {} total tabs",
                     storage.sessions.len(),
                     storage.sessions.iter().map(|s| s.tabs.len()).sum::<usize>()
@@ -407,17 +407,17 @@ fn session_card(props: &SessionCardProps) -> Html {
     );
 
     html! {
-        <div style="border: 1px solid #ddd; border-radius: 8px; padding: 20px; background-color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+        <div class="session-card">
             // Header
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <div style="flex: 1;">
+            <div class="session-header">
+                <div class="session-title-container">
                     if props.is_editing {
-                        <div style="display: flex; gap: 10px; align-items: center;">
+                        <div class="session-title-edit-mode">
                             <input
                                 type="text"
                                 value={props.edit_value.clone()}
                                 oninput={props.on_edit_input.clone()}
-                                style="flex: 1; padding: 8px; border: 1px solid #5B4FE8; border-radius: 4px; font-size: 16px; font-weight: 600;"
+                                class="session-title-input"
                             />
                             <Button
                                 onclick={props.on_save_edit.reform(|_| ())}
@@ -432,9 +432,9 @@ fn session_card(props: &SessionCardProps) -> Html {
                             </Button>
                         </div>
                     } else {
-                        <div style="display: flex; gap: 10px; align-items: center;">
+                        <div class="session-title-view-mode">
                             <h3
-                                style="margin: 0; font-size: 18px; color: #333; cursor: pointer;"
+                                class="session-title"
                                 onclick={props.on_start_edit.reform({
                                     let session_id = session.id.clone();
                                     let name = session.name.clone();
@@ -443,15 +443,15 @@ fn session_card(props: &SessionCardProps) -> Html {
                             >
                                 {&session.name}
                             </h3>
-                            <span style="font-size: 14px; color: #999;">{"✏️"}</span>
+                            <span class="edit-icon">{"✏️"}</span>
                         </div>
                     }
-                    <p style="margin: 5px 0 0 0; font-size: 12px; color: #999;">
+                    <p class="session-date">
                         {format!("{} • {} tabs", formatted_date, session.tabs.len())}
                     </p>
                 </div>
 
-                <div style="display: flex; gap: 10px;">
+                <div class="session-actions">
                     <Button
                         onclick={toggle_expanded.reform(|_| ())}
                         variant={ButtonVariant::Secondary}
@@ -489,32 +489,32 @@ fn session_card(props: &SessionCardProps) -> Html {
 
             // Expanded tabs list
             if *expanded {
-                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
+                <div class="tabs-container">
                     {for domains.iter().map(|domain| {
                         let tabs = domain_groups.get(domain).unwrap();
                         html! {
-                            <div key={domain.clone()} style="margin-bottom: 20px;">
-                                <h4 style="margin: 0 0 10px 0; font-size: 14px; color: #5B4FE8; font-weight: 600;">
+                            <div key={domain.clone()} class="domain-group">
+                                <h4 class="domain-title">
                                     {format!("{} ({})", domain, tabs.len())}
                                 </h4>
-                                <div style="display: flex; flex-direction: column; gap: 5px;">
+                                <div class="tabs-list">
                                     {for tabs.iter().map(|tab| {
                                         let tab_clone = tab.clone();
                                         let session_id = session.id.clone();
                                         let tab_url = tab.url.clone();
 
                                         html! {
-                                            <div key={tab.url.clone()} style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background-color: #f9f9f9; border-radius: 4px; font-size: 13px;">
-                                                <div style="flex: 1; min-width: 0;">
-                                                    <div style="font-weight: 500; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                            <div key={tab.url.clone()} class="tab-item">
+                                                <div class="tab-content">
+                                                    <div class="tab-title">
                                                         {if tab.pinned { "📌 " } else { "" }}
                                                         {&tab.title}
                                                     </div>
-                                                    <div style="color: #999; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                                    <div class="tab-url">
                                                         {&tab.url}
                                                     </div>
                                                 </div>
-                                                <div style="display: flex; gap: 5px; margin-left: 10px;">
+                                                <div class="tab-actions">
                                                     <Button
                                                         onclick={props.on_restore_tab.reform(move |_| tab_clone.clone())}
                                                         size={ButtonSize::Small}
