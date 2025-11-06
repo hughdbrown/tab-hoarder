@@ -138,6 +138,22 @@ export async function createTabs(urls, progressCallback) {
 }
 
 /**
+ * Activate (focus) a specific tab
+ * @param {number} tabId - ID of the tab to activate
+ */
+export async function activateTab(tabId) {
+  await chrome.tabs.update(tabId, { active: true });
+}
+
+/**
+ * Close a single tab
+ * @param {number} tabId - ID of the tab to close
+ */
+export async function closeTab(tabId) {
+  await chrome.tabs.remove(tabId);
+}
+
+/**
  * Get storage data
  * @param {string} key - Storage key
  * @returns {Promise<any>} Stored data

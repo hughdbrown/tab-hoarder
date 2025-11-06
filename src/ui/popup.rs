@@ -3,7 +3,7 @@
 use yew::prelude::*;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::spawn_local;
-use web_sys::console;
+use web_sys::{console, InputEvent, MouseEvent, Event};
 use patternfly_yew::prelude::*;
 use crate::domain::{count_domains, get_top_domains};
 use crate::operations::{sort_tabs_by_domain, make_tabs_unique};
@@ -26,6 +26,12 @@ extern "C" {
 
     #[wasm_bindgen(catch)]
     async fn closeTabs(tab_ids: JsValue, progress_callback: &js_sys::Function) -> Result<(), JsValue>;
+
+    #[wasm_bindgen(catch)]
+    async fn activateTab(tab_id: i32) -> Result<(), JsValue>;
+
+    #[wasm_bindgen(catch)]
+    async fn closeTab(tab_id: i32) -> Result<(), JsValue>;
 
     #[wasm_bindgen(catch)]
     async fn getStorage(key: &str) -> Result<JsValue, JsValue>;
@@ -70,6 +76,11 @@ pub fn app() -> Html {
     let is_domains_expanded = use_state(|| false);
     let active_tab = use_state(|| ActiveTab::Search);
 
+    // Search tab state
+    let search_tabs = use_state(|| Vec::<TabInfo>::new());
+    let search_query = use_state(|| String::new());
+    let use_regex = use_state(|| false);
+
     // Check storage quota on mount
     {
         let storage_warning = storage_warning.clone();
@@ -85,6 +96,30 @@ pub fn app() -> Html {
                     }
                 }
             });
+            || ()
+        });
+    }
+
+    // Load tabs when Search tab is selected
+    {
+        let search_tabs = search_tabs.clone();
+        let search_query = search_query.clone();
+        use_effect_with(active_tab.clone(), move |tab| {
+            if **tab == ActiveTab::Search {
+                spawn_local(async move {
+                    // Reset search query
+                    search_query.set(String::new());
+
+                    // Load tabs from Chrome
+                    if let Ok(tabs_js) = getCurrentWindowTabs().await {
+                        if let Ok(mut tabs) = serde_wasm_bindgen::from_value::<Vec<TabInfo>>(tabs_js) {
+                            // Sort by tab index to maintain Chrome's tab order
+                            tabs.sort_by_key(|t| t.index);
+                            search_tabs.set(tabs);
+                        }
+                    }
+                });
+            }
             || ()
         });
     }
@@ -282,6 +317,80 @@ pub fn app() -> Html {
 
     let is_busy = !matches!(*state, AppState::Idle);
 
+    // Search tab: Filter tabs based on search query
+    let filtered_tabs: Vec<TabInfo> = if search_query.is_empty() {
+        (*search_tabs).clone()
+    } else {
+        use regex::Regex;
+
+        if *use_regex {
+            // Try to compile regex - if it fails, return current list unchanged
+            if let Ok(re) = Regex::new(&search_query) {
+                search_tabs
+                    .iter()
+                    .filter(|tab| re.is_match(&tab.title))
+                    .cloned()
+                    .collect()
+            } else {
+                // Invalid regex - keep showing current results
+                (*search_tabs).clone()
+            }
+        } else {
+            // Simple case-insensitive text matching
+            let query_lower = search_query.to_lowercase();
+            search_tabs
+                .iter()
+                .filter(|tab| tab.title.to_lowercase().contains(&query_lower))
+                .cloned()
+                .collect()
+        }
+    };
+
+    // Search tab: Handle search query input change
+    let on_search_query_change = {
+        let search_query = search_query.clone();
+        Callback::from(move |value: String| {
+            search_query.set(value);
+        })
+    };
+
+    // Search tab: Handle regex checkbox change
+    let on_regex_change = {
+        let use_regex = use_regex.clone();
+        Callback::from(move |checked: bool| {
+            use_regex.set(checked);
+        })
+    };
+
+    // Search tab: Handle tab click to activate in Chrome
+    let on_search_tab_click = {
+        Callback::from(move |tab_id: i32| {
+            spawn_local(async move {
+                let _ = activateTab(tab_id).await;
+            });
+        })
+    };
+
+    // Search tab: Handle close button (X) click
+    let on_search_tab_close = {
+        let search_tabs = search_tabs.clone();
+        Callback::from(move |tab_id: i32| {
+            let search_tabs = search_tabs.clone();
+            spawn_local(async move {
+                // Close tab in Chrome
+                if closeTab(tab_id).await.is_ok() {
+                    // Remove from local state
+                    let updated_tabs: Vec<TabInfo> = search_tabs
+                        .iter()
+                        .filter(|t| t.id != tab_id)
+                        .cloned()
+                        .collect();
+                    search_tabs.set(updated_tabs);
+                }
+            });
+        })
+    };
+
     // Tab click handlers
     let on_tab_click = {
         let active_tab = active_tab.clone();
@@ -370,7 +479,82 @@ pub fn app() -> Html {
                 {match &*active_tab {
                     ActiveTab::Search => html! {
                         <div class="flex-column-gap">
-                            // Empty for now
+                            // Search controls
+                            <div class="search-controls">
+                                <input
+                                    type="text"
+                                    placeholder="Search tabs by title..."
+                                    value={(*search_query).clone()}
+                                    oninput={
+                                        let on_search_query_change = on_search_query_change.clone();
+                                        Callback::from(move |e: InputEvent| {
+                                            let input: web_sys::HtmlInputElement = e.target_unchecked_into();
+                                            on_search_query_change.emit(input.value());
+                                        })
+                                    }
+                                    class="search-input"
+                                />
+                                <div class="regex-checkbox">
+                                    <label>
+                                        <input
+                                            type="checkbox"
+                                            checked={*use_regex}
+                                            onchange={
+                                                let on_regex_change = on_regex_change.clone();
+                                                Callback::from(move |e: Event| {
+                                                    let input: web_sys::HtmlInputElement = e.target_unchecked_into();
+                                                    on_regex_change.emit(input.checked());
+                                                })
+                                            }
+                                        />
+                                        {" Regex"}
+                                    </label>
+                                </div>
+                            </div>
+
+                            // Tabs list
+                            <div class="tabs-list">
+                                {if filtered_tabs.is_empty() {
+                                    html! {
+                                        <div class="empty-message">
+                                            {if search_query.is_empty() {
+                                                "No tabs to display."
+                                            } else {
+                                                "No tabs match the search criteria."
+                                            }}
+                                        </div>
+                                    }
+                                } else {
+                                    html! {
+                                        <div class="scrollable-tabs">
+                                            {for filtered_tabs.iter().map(|tab| {
+                                                let tab_id = tab.id;
+                                                let on_click = {
+                                                    let on_search_tab_click = on_search_tab_click.clone();
+                                                    Callback::from(move |e: MouseEvent| {
+                                                        e.prevent_default();
+                                                        on_search_tab_click.emit(tab_id);
+                                                    })
+                                                };
+                                                let on_close = {
+                                                    let on_search_tab_close = on_search_tab_close.clone();
+                                                    Callback::from(move |e: MouseEvent| {
+                                                        e.stop_propagation();
+                                                        on_search_tab_close.emit(tab_id);
+                                                    })
+                                                };
+
+                                                html! {
+                                                    <div class="tab-item" onclick={on_click}>
+                                                        <span class="tab-title">{&tab.title}</span>
+                                                        <button class="tab-close-btn" onclick={on_close}>{"×"}</button>
+                                                    </div>
+                                                }
+                                            })}
+                                        </div>
+                                    }
+                                }}
+                            </div>
                         </div>
                     },
                     ActiveTab::SortUnique => html! {
