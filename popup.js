@@ -46,9 +46,9 @@ export async function sortTabsByDomain(sortedTabIds, progressCallback) {
     await Promise.all(movePromises);
 
     // Update progress
-    const processed = Math.min((chunkIndex + 1) * CHUNK_SIZE, total);
-    const progress = Math.round((processed / total) * 100);
     if (progressCallback) {
+      const processed = Math.min((chunkIndex + 1) * CHUNK_SIZE, total);
+      const progress = processed / total;
       progressCallback(progress);
     }
 
@@ -80,9 +80,9 @@ export async function removeTabs(tabIdsToRemove, progressCallback) {
     await chrome.tabs.remove(chunk);
 
     // Update progress
-    const processed = Math.min((chunkIndex + 1) * CHUNK_SIZE, total);
-    const progress = Math.round((processed / total) * 100);
     if (progressCallback) {
+      const processed = Math.min((chunkIndex + 1) * CHUNK_SIZE, total);
+      const progress = processed / total;
       progressCallback(progress);
     }
 
@@ -126,9 +126,9 @@ export async function createTabs(urls, progressCallback) {
     await Promise.all(createPromises);
 
     // Update progress
-    const processed = Math.min((chunkIndex + 1) * CHUNK_SIZE, total);
-    const progress = Math.round((processed / total) * 100);
     if (progressCallback) {
+      const processed = Math.min((chunkIndex + 1) * CHUNK_SIZE, total);
+      const progress = processed / total;
       progressCallback(progress);
     }
 
