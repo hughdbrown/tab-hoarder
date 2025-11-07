@@ -326,12 +326,20 @@
     margin-bottom: 15px;
 }
 
-.regex-checkbox {
+.search-options {
     display: flex;
+    gap: 20px;
     align-items: center;
 }
 
-.regex-checkbox label {
+.regex-checkbox,
+.case-checkbox {
+    display: inline-flex;
+    align-items: center;
+}
+
+.regex-checkbox label,
+.case-checkbox label {
     display: flex;
     align-items: center;
     cursor: pointer;
@@ -339,7 +347,8 @@
     color: #333;
 }
 
-.regex-checkbox input[type="checkbox"] {
+.regex-checkbox input[type="checkbox"],
+.case-checkbox input[type="checkbox"] {
     margin-right: 5px;
     cursor: pointer;
 }

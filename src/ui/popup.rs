@@ -3,7 +3,7 @@
 use yew::prelude::*;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::spawn_local;
-use web_sys::{console, InputEvent, MouseEvent, Event};
+use web_sys::{console, InputEvent, MouseEvent};
 use patternfly_yew::prelude::*;
 use crate::domain::{count_domains, get_top_domains};
 use crate::operations::{sort_tabs_by_domain, make_tabs_unique};
@@ -80,6 +80,37 @@ pub fn app() -> Html {
     let search_tabs = use_state(|| Vec::<TabInfo>::new());
     let search_query = use_state(|| String::new());
     let use_regex = use_state(|| false);
+    let use_case_insensitive = use_state(|| true); // New: case-insensitive option (default true)
+
+    // Load search preferences from storage on mount
+    {
+        let search_query = search_query.clone();
+        let use_regex = use_regex.clone();
+        let use_case_insensitive = use_case_insensitive.clone();
+        use_effect_with((), move |_| {
+            spawn_local(async move {
+                // Load search query
+                if let Ok(query_js) = getStorage("search_query").await {
+                    if let Ok(query) = serde_wasm_bindgen::from_value::<String>(query_js) {
+                        search_query.set(query);
+                    }
+                }
+                // Load regex preference
+                if let Ok(regex_js) = getStorage("search_use_regex").await {
+                    if let Ok(use_regex_val) = serde_wasm_bindgen::from_value::<bool>(regex_js) {
+                        use_regex.set(use_regex_val);
+                    }
+                }
+                // Load case-insensitive preference
+                if let Ok(case_js) = getStorage("search_case_insensitive").await {
+                    if let Ok(case_val) = serde_wasm_bindgen::from_value::<bool>(case_js) {
+                        use_case_insensitive.set(case_val);
+                    }
+                }
+            });
+            || ()
+        });
+    }
 
     // Check storage quota on mount
     {
@@ -103,14 +134,10 @@ pub fn app() -> Html {
     // Load tabs when Search tab is selected
     {
         let search_tabs = search_tabs.clone();
-        let search_query = search_query.clone();
         use_effect_with(active_tab.clone(), move |tab| {
             if **tab == ActiveTab::Search {
                 spawn_local(async move {
-                    // Reset search query
-                    search_query.set(String::new());
-
-                    // Load tabs from Chrome
+                    // Load tabs from Chrome (don't reset search query - it persists)
                     if let Ok(tabs_js) = getCurrentWindowTabs().await {
                         if let Ok(mut tabs) = serde_wasm_bindgen::from_value::<Vec<TabInfo>>(tabs_js) {
                             // Sort by tab index to maintain Chrome's tab order
@@ -324,11 +351,21 @@ pub fn app() -> Html {
         use regex::Regex;
 
         if *use_regex {
-            // Try to compile regex - if it fails, return current list unchanged
-            if let Ok(re) = Regex::new(&search_query) {
+            // Regex matching
+            let regex_result = if *use_case_insensitive {
+                Regex::new(&format!("(?i){}", &**search_query))
+            } else {
+                Regex::new(&**search_query)
+            };
+
+            if let Ok(re) = regex_result {
                 search_tabs
                     .iter()
-                    .filter(|tab| re.is_match(&tab.title))
+                    .filter(|tab| {
+                        // Search in title, URL, and domain
+                        let domain = crate::domain::extract_domain(&tab.url).unwrap_or_default();
+                        re.is_match(&tab.title) || re.is_match(&tab.url) || re.is_match(&domain)
+                    })
                     .cloned()
                     .collect()
             } else {
@@ -336,13 +373,31 @@ pub fn app() -> Html {
                 (*search_tabs).clone()
             }
         } else {
-            // Simple case-insensitive text matching
-            let query_lower = search_query.to_lowercase();
-            search_tabs
-                .iter()
-                .filter(|tab| tab.title.to_lowercase().contains(&query_lower))
-                .cloned()
-                .collect()
+            // Text matching (case-sensitive or case-insensitive)
+            if *use_case_insensitive {
+                let query_lower = search_query.to_lowercase();
+                search_tabs
+                    .iter()
+                    .filter(|tab| {
+                        let domain = crate::domain::extract_domain(&tab.url).unwrap_or_default();
+                        tab.title.to_lowercase().contains(&query_lower)
+                            || tab.url.to_lowercase().contains(&query_lower)
+                            || domain.to_lowercase().contains(&query_lower)
+                    })
+                    .cloned()
+                    .collect()
+            } else {
+                search_tabs
+                    .iter()
+                    .filter(|tab| {
+                        let domain = crate::domain::extract_domain(&tab.url).unwrap_or_default();
+                        tab.title.contains(&**search_query)
+                            || tab.url.contains(&**search_query)
+                            || domain.contains(&**search_query)
+                    })
+                    .cloned()
+                    .collect()
+            }
         }
     };
 
@@ -350,15 +405,38 @@ pub fn app() -> Html {
     let on_search_query_change = {
         let search_query = search_query.clone();
         Callback::from(move |value: String| {
-            search_query.set(value);
+            let query = value;
+            search_query.set(query.clone());
+            // Save to storage
+            spawn_local(async move {
+                let _ = setStorage("search_query", serde_wasm_bindgen::to_value(&query).unwrap()).await;
+            });
         })
     };
 
     // Search tab: Handle regex checkbox change
     let on_regex_change = {
         let use_regex = use_regex.clone();
-        Callback::from(move |checked: bool| {
-            use_regex.set(checked);
+        Callback::from(move |_: MouseEvent| {
+            let new_value = !*use_regex;
+            use_regex.set(new_value);
+            // Save to storage
+            spawn_local(async move {
+                let _ = setStorage("search_use_regex", serde_wasm_bindgen::to_value(&new_value).unwrap()).await;
+            });
+        })
+    };
+
+    // Search tab: Handle case-insensitive checkbox change
+    let on_case_insensitive_change = {
+        let use_case_insensitive = use_case_insensitive.clone();
+        Callback::from(move |_: MouseEvent| {
+            let new_value = !*use_case_insensitive;
+            use_case_insensitive.set(new_value);
+            // Save to storage
+            spawn_local(async move {
+                let _ = setStorage("search_case_insensitive", serde_wasm_bindgen::to_value(&new_value).unwrap()).await;
+            });
         })
     };
 
@@ -483,7 +561,7 @@ pub fn app() -> Html {
                             <div class="search-controls">
                                 <input
                                     type="text"
-                                    placeholder="Search tabs by title..."
+                                    placeholder="Search tabs by title, domain, or URL..."
                                     value={(*search_query).clone()}
                                     oninput={
                                         let on_search_query_change = on_search_query_change.clone();
@@ -494,21 +572,27 @@ pub fn app() -> Html {
                                     }
                                     class="search-input"
                                 />
-                                <div class="regex-checkbox">
-                                    <label>
-                                        <input
-                                            type="checkbox"
-                                            checked={*use_regex}
-                                            onchange={
-                                                let on_regex_change = on_regex_change.clone();
-                                                Callback::from(move |e: Event| {
-                                                    let input: web_sys::HtmlInputElement = e.target_unchecked_into();
-                                                    on_regex_change.emit(input.checked());
-                                                })
-                                            }
-                                        />
-                                        {" Regex"}
-                                    </label>
+                                <div class="search-options">
+                                    <span class="regex-checkbox">
+                                        <label>
+                                            <input
+                                                type="checkbox"
+                                                checked={*use_regex}
+                                                onclick={on_regex_change.clone()}
+                                            />
+                                            {" Regex"}
+                                        </label>
+                                    </span>
+                                    <span class="case-checkbox">
+                                        <label>
+                                            <input
+                                                type="checkbox"
+                                                checked={*use_case_insensitive}
+                                                onclick={on_case_insensitive_change.clone()}
+                                            />
+                                            {" Case-insensitive"}
+                                        </label>
+                                    </span>
                                 </div>
                             </div>
 
