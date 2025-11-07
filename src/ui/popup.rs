@@ -544,9 +544,15 @@ pub fn app() -> Html {
                                                     })
                                                 };
 
+                                                let display_text = if let Some(domain) = crate::domain::extract_domain(&tab.url) {
+                                                    format!("{}: {}", domain, tab.title)
+                                                } else {
+                                                    tab.title.clone()
+                                                };
+
                                                 html! {
                                                     <div class="tab-item" onclick={on_click}>
-                                                        <span class="tab-title">{&tab.title}</span>
+                                                        <span class="tab-title">{display_text}</span>
                                                         <button class="tab-close-btn" onclick={on_close}>{"×"}</button>
                                                     </div>
                                                 }
