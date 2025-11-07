@@ -702,14 +702,13 @@ pub fn app() -> Html {
 // Helper functions
 
 async fn get_current_tabs() -> Result<Vec<TabInfo>, String> {
-    match getCurrentWindowTabs().await {
-        Ok(tabs_js) => {
-            let tabs: Vec<TabInfo> = serde_wasm_bindgen::from_value(tabs_js)
-                .map_err(|e| format!("Failed to parse tabs: {:?}", e))?;
-            Ok(tabs)
-        }
-        Err(e) => Err(format!("Failed to get tabs: {:?}", e)),
-    }
+    getCurrentWindowTabs()
+        .await
+        .map_err(|e| format!("Failed to get tabs: {:?}", e))
+        .and_then(|tabs_js| {
+            serde_wasm_bindgen::from_value(tabs_js)
+                .map_err(|e| format!("Failed to parse tabs: {:?}", e))
+        })
 }
 
 async fn sort_tabs_with_progress(tab_ids: Vec<i32>, state: UseStateHandle<AppState>) -> Result<(), String> {

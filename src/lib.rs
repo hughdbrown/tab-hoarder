@@ -19,10 +19,7 @@ pub fn main() {
 // Re-export core domain functions for JavaScript access
 #[wasm_bindgen]
 pub fn extract_domain(url: &str) -> String {
-    match domain::extract_domain(url) {
-        Some(domain) => domain,
-        None => "invalid".to_string(),
-    }
+    domain::extract_domain(url).unwrap_or_else(|| "invalid".to_string())
 }
 
 // Start the Yew app for the popup

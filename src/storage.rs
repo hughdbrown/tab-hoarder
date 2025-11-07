@@ -31,12 +31,13 @@ impl StorageData {
     }
 
     pub fn update_session_name(&mut self, session_id: &str, new_name: String) -> bool {
-        if let Some(session) = self.sessions.iter_mut().find(|s| s.id == session_id) {
-            session.name = new_name;
-            true
-        } else {
-            false
-        }
+        self.sessions
+            .iter_mut()
+            .find(|s| s.id == session_id)
+            .map(|session| {
+                session.name = new_name;
+            })
+            .is_some()
     }
 }
 

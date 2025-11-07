@@ -99,13 +99,12 @@ pub fn get_top_domains(counts: &HashMap<String, usize>, n: usize) -> Vec<(String
         .map(|(domain, count)| (domain.clone(), *count))
         .collect();
 
-    // Sort by count descending, then by domain name ascending
-    domain_vec.sort_by(|a, b| {
+    domain_vec.sort_unstable_by(|a, b| {
         b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0))
     });
 
-    // Take top N
-    domain_vec.into_iter().take(n).collect()
+    domain_vec.truncate(n);
+    domain_vec
 }
 
 #[cfg(test)]
