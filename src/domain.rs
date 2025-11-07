@@ -39,16 +39,17 @@ pub fn extract_domain(url: &str) -> Option<String> {
             let tld = parts[parts.len() - 1];
 
             // Check if we need 3 parts (for .co.uk, .com.au style TLDs)
+            let mut i: usize = 2;
             if parts.len() >= 3 && tld.len() == 2 {
                 let second_level = parts[parts.len() - 2];
                 if second_level == "co" || second_level == "com" {
                     // Return last 3 parts (e.g., "bbc.co.uk" or "example.com.au")
-                    return Some(parts[parts.len() - 3..].join("."));
+                    i = 3;
                 }
             }
 
             // Default: return last 2 parts (e.g., "google.com")
-            return Some(parts[parts.len() - 2..].join("."));
+            return Some(parts[parts.len() - i..].join("."));
         }
     }
     None
