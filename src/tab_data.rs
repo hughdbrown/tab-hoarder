@@ -23,13 +23,6 @@ impl TabInfo {
     }
 }
 
-/// Domain count for display
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DomainCount {
-    pub domain: String,
-    pub count: usize,
-}
-
 /// A collapsed tab session
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CollapsedSession {
