@@ -88,15 +88,12 @@ fn is_ip_address(s: &str) -> bool {
 
 /// Count domain occurrences from a list of URLs
 pub fn count_domains(urls: &[String]) -> HashMap<String, usize> {
-    let mut counts: HashMap<String, usize> = HashMap::new();
-
-    for url in urls {
-        if let Some(domain) = extract_domain(url) {
+    urls.iter()
+        .filter_map(|url| extract_domain(url))
+        .fold(HashMap::new(), |mut counts, domain| {
             *counts.entry(domain).or_insert(0) += 1;
-        }
-    }
-
-    counts
+            counts
+        })
 }
 
 /// Get the top N domains by count
