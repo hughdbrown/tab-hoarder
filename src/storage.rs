@@ -26,10 +26,6 @@ impl StorageData {
         self.sessions.len() < original_len
     }
 
-    pub fn get_session(&self, session_id: &str) -> Option<&CollapsedSession> {
-        self.sessions.iter().find(|s| s.id == session_id)
-    }
-
     pub fn update_session_name(&mut self, session_id: &str, new_name: String) -> bool {
         self.sessions
             .iter_mut()
@@ -105,17 +101,6 @@ mod tests {
 
         assert!(!removed);
         assert_eq!(storage.sessions.len(), 1);
-    }
-
-    #[test]
-    fn test_get_session() {
-        let mut storage = StorageData::new();
-        storage.add_session(create_test_session("session-1", "Test Session"));
-
-        let session = storage.get_session("session-1");
-
-        assert!(session.is_some());
-        assert_eq!(session.unwrap().name, "Test Session");
     }
 
     #[test]
