@@ -7,16 +7,14 @@ use crate::tab_data::TabInfo;
 pub fn sort_tabs_by_domain(tabs: &[TabInfo]) -> Vec<TabInfo> {
     let mut tabs_with_domain: Vec<(TabInfo, String)> = tabs
         .iter()
-        .filter_map(|tab: &TabInfo| {
-            match extract_domain(&tab.url) {
-                Some(domain) => Some((tab.clone(), domain)),
-                None => None,
-            }
+        .filter_map(|tab| {
+            extract_domain(&tab.url).map(|domain| (tab.clone(), domain))
         })
         .collect();
 
-    // Sort by domain, then by URL
-    tabs_with_domain.sort_by(|a, b| a.1.cmp(&b.1).then_with(|| a.0.url.cmp(&b.0.url)));
+    tabs_with_domain.sort_unstable_by(|a, b| {
+        a.1.cmp(&b.1).then_with(|| a.0.url.cmp(&b.0.url))
+    });
 
     tabs_with_domain.into_iter().map(|(tab, _)| tab).collect()
 }

@@ -19,40 +19,35 @@ use std::collections::HashMap;
 /// - https://news.bbc.co.uk/article → bbc.co.uk
 /// - https://shop.example.com.au/products → example.com.au
 pub fn extract_domain(url: &str) -> Option<String> {
-    // Extract hostname from URL
-    if !url.is_empty() {
-        if let Some(hostname) = extract_hostname(url) {
-            // Handle localhost and IP addresses
-            if hostname == "localhost" || is_ip_address(&hostname) {
-                return Some(hostname);
-            }
-
-            // Split hostname into parts
-            let parts: Vec<&str> = hostname.split('.').collect();
-
-            // Need at least 2 parts for a valid domain
-            if parts.len() < 2 {
-                return Some(hostname);
-            }
-
-            // Get the TLD (last part)
-            let tld = parts[parts.len() - 1];
-
-            // Check if we need 3 parts (for .co.uk, .com.au style TLDs)
-            let mut i: usize = 2;
-            if parts.len() >= 3 && tld.len() == 2 {
-                let second_level = parts[parts.len() - 2];
-                if second_level == "co" || second_level == "com" {
-                    // Return last 3 parts (e.g., "bbc.co.uk" or "example.com.au")
-                    i = 3;
-                }
-            }
-
-            // Default: return last 2 parts (e.g., "google.com")
-            return Some(parts[parts.len() - i..].join("."));
-        }
+    if url.is_empty() {
+        return None;
     }
-    None
+
+    extract_hostname(url).map(|hostname| {
+        // Special cases: localhost and IP addresses
+        if hostname == "localhost" || is_ip_address(&hostname) {
+            return hostname;
+        }
+
+        let parts: Vec<&str> = hostname.split('.').collect();
+
+        // Need at least 2 parts for a valid domain
+        if parts.len() < 2 {
+            return hostname;
+        }
+
+        // Determine if we need 3 parts (for .co.uk, .com.au style TLDs)
+        let tld = parts[parts.len() - 1];
+        let num_parts = if parts.len() >= 3
+            && tld.len() == 2
+            && matches!(parts[parts.len() - 2], "co" | "com") {
+            3
+        } else {
+            2
+        };
+
+        parts[parts.len() - num_parts..].join(".")
+    })
 }
 
 /// Extract hostname from a URL string
