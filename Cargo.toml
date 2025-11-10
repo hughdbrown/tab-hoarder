@@ -52,6 +52,7 @@ console_error_panic_hook = "0.1"
 # Logging
 log = "0.4"
 wasm-logger = "0.2"
+url = "2.5.7"
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3"

@@ -1,10 +1,11 @@
 /// Domain extraction and counting logic for Tab Hoarder
 use std::collections::HashMap;
+use url::Url;
 
 /// Extract the domain from a URL with smart TLD handling
 ///
 /// Algorithm:
-/// 1. Parse URL to extract hostname
+/// 1. Parse URL using url::Url to extract hostname
 /// 2. Split hostname by "."
 /// 3. Get last segment (TLD)
 /// 4. If TLD is 2 letters AND second-to-last is "co" or "com":
@@ -23,57 +24,53 @@ pub fn extract_domain(url: &str) -> Option<String> {
         return None;
     }
 
-    extract_hostname(url).map(|hostname| {
-        // Special cases: localhost and IP addresses
-        if hostname == "localhost" || is_ip_address(&hostname) {
-            return hostname;
+    // Try to parse as URL using url::Url
+    let hostname = match Url::parse(url) {
+        Ok(parsed_url) => {
+            // host_str() returns None if there's no host (e.g., "https://")
+            parsed_url.host_str()?.to_string()
         }
-
-        let parts: Vec<&str> = hostname.split('.').collect();
-
-        // Need at least 2 parts for a valid domain
-        if parts.len() < 2 {
-            return hostname;
+        Err(e) => {
+            // Only try fallback for RelativeUrlWithoutBase errors
+            // For other errors (like EmptyHost), we should return None
+            if e == url::ParseError::RelativeUrlWithoutBase {
+                // Fallback for non-standard URLs: try adding a scheme
+                Url::parse(&format!("http://{}", url))
+                    .ok()?
+                    .host_str()?
+                    .to_string()
+            } else {
+                return None;
+            }
         }
+    };
 
-        // Determine if we need 3 parts (for .co.uk, .com.au style TLDs)
-        let tld = parts[parts.len() - 1];
-        let num_parts = if parts.len() >= 3
-            && tld.len() == 2
-            && matches!(parts[parts.len() - 2], "co" | "com") {
-            3
-        } else {
-            2
-        };
-
-        parts[parts.len() - num_parts..].join(".")
-    })
-}
-
-/// Extract hostname from a URL string
-fn extract_hostname(url: &str) -> Option<String> {
-    // Remove protocol if present
-    let url_clean = url
-        .trim()
-        .replace("https://", "")
-        .replace("http://", "")
-        .replace("ftp://", "");
-
-    // Get everything before the first '/' (or the whole string if no '/')
-    let hostname_with_port = url_clean.split('/').next()?.to_string();
-
-    // Remove port if present (e.g., "localhost:3000" -> "localhost")
-    let hostname = hostname_with_port
-        .split(':')
-        .next()?
-        .to_lowercase();
-
-    if hostname.is_empty() {
-        None
-    } else {
-        Some(hostname)
+    // Special cases: localhost and IP addresses
+    if hostname == "localhost" || is_ip_address(&hostname) {
+        return Some(hostname);
     }
+
+    let parts: Vec<&str> = hostname.split('.').collect();
+
+    // Need at least 2 parts for a valid domain
+    if parts.len() < 2 {
+        return Some(hostname);
+    }
+
+    // Determine if we need 3 parts (for .co.uk, .com.au style TLDs)
+    let tld = parts[parts.len() - 1];
+    let num_parts = if parts.len() >= 3
+        && tld.len() == 2
+        && matches!(parts[parts.len() - 2], "co" | "com")
+    {
+        3
+    } else {
+        2
+    };
+
+    Some(parts[parts.len() - num_parts..].join("."))
 }
+
 
 /// Check if a string looks like an IP address
 fn is_ip_address(s: &str) -> bool {
